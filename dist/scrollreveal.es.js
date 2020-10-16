@@ -10,7 +10,7 @@
 	a commercial license from https://scrollrevealjs.org/
 */
 import $ from 'tealight';
-import { translateY, translateX, rotateX, rotateY, rotateZ, scale, parse, multiply } from 'rematrix';
+import { multiply, parse, rotateX, rotateY, rotateZ, scale, translateX, translateY } from 'rematrix';
 import raf from 'miniraf';
 
 var defaults = {
@@ -44,7 +44,7 @@ var defaults = {
 	afterReveal: function afterReveal() {},
 	beforeReset: function beforeReset() {},
 	beforeReveal: function beforeReveal() {}
-};
+}
 
 function failure() {
 	document.documentElement.classList.remove('sr');
@@ -72,7 +72,14 @@ function success() {
 	}
 }
 
-var mount = { success: success, failure: failure };
+var mount = { success: success, failure: failure }
+
+var style = require("style-attr");
+
+function applyStyles$1(node, styleString) {
+  var styleObject = style.parse(styleString);
+  Object.assign(node.style, styleObject);
+}
 
 function isObject(x) {
 	return (
@@ -182,66 +189,66 @@ function rinse() {
 }
 
 function clean(target) {
-	var this$1 = this;
+  var this$1 = this;
 
-	var dirty;
-	try {
-		each($(target), function (node) {
-			var id = node.getAttribute('data-sr-id');
-			if (id !== null) {
-				dirty = true;
-				var element = this$1.store.elements[id];
-				if (element.callbackTimer) {
-					window.clearTimeout(element.callbackTimer.clock);
-				}
-				node.setAttribute('style', element.styles.inline.generated);
-				node.removeAttribute('data-sr-id');
-				delete this$1.store.elements[id];
-			}
-		});
-	} catch (e) {
-		return logger.call(this, 'Clean failed.', e.message)
-	}
+  var dirty;
+  try {
+    each($(target), function (node) {
+      var id = node.getAttribute("data-sr-id");
+      if (id !== null) {
+        dirty = true;
+        var element = this$1.store.elements[id];
+        if (element.callbackTimer) {
+          window.clearTimeout(element.callbackTimer.clock);
+        }
+        applyStyles$1(element.node, element.styles.inline.generated);
+        node.removeAttribute("data-sr-id");
+        delete this$1.store.elements[id];
+      }
+    });
+  } catch (e) {
+    return logger.call(this, "Clean failed.", e.message);
+  }
 
-	if (dirty) {
-		try {
-			rinse.call(this);
-		} catch (e) {
-			return logger.call(this, 'Clean failed.', e.message)
-		}
-	}
+  if (dirty) {
+    try {
+      rinse.call(this);
+    } catch (e) {
+      return logger.call(this, "Clean failed.", e.message);
+    }
+  }
 }
 
 function destroy() {
-	var this$1 = this;
+  var this$1 = this;
 
-	/**
-	 * Remove all generated styles and element ids
-	 */
-	each(this.store.elements, function (element) {
-		element.node.setAttribute('style', element.styles.inline.generated);
-		element.node.removeAttribute('data-sr-id');
-	});
+  /**
+   * Remove all generated styles and element ids
+   */
+  each(this.store.elements, function (element) {
+    applyStyles$1(element.node, element.styles.inline.generated);
+    element.node.removeAttribute("data-sr-id");
+  });
 
-	/**
-	 * Remove all event listeners.
-	 */
-	each(this.store.containers, function (container) {
-		var target =
-			container.node === document.documentElement ? window : container.node;
-		target.removeEventListener('scroll', this$1.delegate);
-		target.removeEventListener('resize', this$1.delegate);
-	});
+  /**
+   * Remove all event listeners.
+   */
+  each(this.store.containers, function (container) {
+    var target =
+      container.node === document.documentElement ? window : container.node;
+    target.removeEventListener("scroll", this$1.delegate);
+    target.removeEventListener("resize", this$1.delegate);
+  });
 
-	/**
-	 * Clear all data from the store
-	 */
-	this.store = {
-		containers: {},
-		elements: {},
-		history: [],
-		sequences: {}
-	};
+  /**
+   * Clear all data from the store
+   */
+  this.store = {
+    containers: {},
+    elements: {},
+    history: [],
+    sequences: {},
+  };
 }
 
 var getPrefixedCssProp = (function () {
@@ -271,7 +278,7 @@ var getPrefixedCssProp = (function () {
 	return getPrefixedCssProperty
 })();
 
-function style(element) {
+function style$1(element) {
 	var computed = window.getComputedStyle(element.node);
 	var position = computed.position;
 	var config = element.config;
@@ -482,87 +489,86 @@ function style(element) {
 }
 
 function animate(element, force) {
-	if ( force === void 0 ) force = {};
+  if ( force === void 0 ) force = {};
 
-	var pristine = force.pristine || this.pristine;
-	var delayed =
-		element.config.useDelay === 'always' ||
-		(element.config.useDelay === 'onload' && pristine) ||
-		(element.config.useDelay === 'once' && !element.seen);
+  var pristine = force.pristine || this.pristine;
+  var delayed =
+    element.config.useDelay === "always" ||
+    (element.config.useDelay === "onload" && pristine) ||
+    (element.config.useDelay === "once" && !element.seen);
 
-	var shouldReveal = element.visible && !element.revealed;
-	var shouldReset = !element.visible && element.revealed && element.config.reset;
+  var shouldReveal = element.visible && !element.revealed;
+  var shouldReset =
+    !element.visible && element.revealed && element.config.reset;
 
-	if (force.reveal || shouldReveal) {
-		return triggerReveal.call(this, element, delayed)
-	}
+  if (force.reveal || shouldReveal) {
+    return triggerReveal.call(this, element, delayed);
+  }
 
-	if (force.reset || shouldReset) {
-		return triggerReset.call(this, element)
-	}
+  if (force.reset || shouldReset) {
+    return triggerReset.call(this, element);
+  }
 }
 
 function triggerReveal(element, delayed) {
-	var styles = [
-		element.styles.inline.generated,
-		element.styles.opacity.computed,
-		element.styles.transform.generated.final
-	];
-	if (delayed) {
-		styles.push(element.styles.transition.generated.delayed);
-	} else {
-		styles.push(element.styles.transition.generated.instant);
-	}
-	element.revealed = element.seen = true;
-	element.node.setAttribute('style', styles.filter(function (s) { return s !== ''; }).join(' '));
-	registerCallbacks.call(this, element, delayed);
+  var styles = [
+    element.styles.inline.generated,
+    element.styles.opacity.computed,
+    element.styles.transform.generated.final ];
+  if (delayed) {
+    styles.push(element.styles.transition.generated.delayed);
+  } else {
+    styles.push(element.styles.transition.generated.instant);
+  }
+  element.revealed = element.seen = true;
+  applyStyles$1(element.node, styles.filter(function (s) { return s !== ""; }).join(" "));
+  registerCallbacks.call(this, element, delayed);
 }
 
 function triggerReset(element) {
-	var styles = [
-		element.styles.inline.generated,
-		element.styles.opacity.generated,
-		element.styles.transform.generated.initial,
-		element.styles.transition.generated.instant
-	];
-	element.revealed = false;
-	element.node.setAttribute('style', styles.filter(function (s) { return s !== ''; }).join(' '));
-	registerCallbacks.call(this, element);
+  var styles = [
+    element.styles.inline.generated,
+    element.styles.opacity.generated,
+    element.styles.transform.generated.initial,
+    element.styles.transition.generated.instant ];
+  element.revealed = false;
+  applyStyles$1(element.node, styles.filter(function (s) { return s !== ""; }).join(" "));
+  registerCallbacks.call(this, element);
 }
 
 function registerCallbacks(element, isDelayed) {
-	var this$1 = this;
+  var this$1 = this;
 
-	var duration = isDelayed
-		? element.config.duration + element.config.delay
-		: element.config.duration;
+  var duration = isDelayed
+    ? element.config.duration + element.config.delay
+    : element.config.duration;
 
-	var beforeCallback = element.revealed
-		? element.config.beforeReveal
-		: element.config.beforeReset;
+  var beforeCallback = element.revealed
+    ? element.config.beforeReveal
+    : element.config.beforeReset;
 
-	var afterCallback = element.revealed
-		? element.config.afterReveal
-		: element.config.afterReset;
+  var afterCallback = element.revealed
+    ? element.config.afterReveal
+    : element.config.afterReset;
 
-	var elapsed = 0;
-	if (element.callbackTimer) {
-		elapsed = Date.now() - element.callbackTimer.start;
-		window.clearTimeout(element.callbackTimer.clock);
-	}
+  var elapsed = 0;
+  if (element.callbackTimer) {
+    elapsed = Date.now() - element.callbackTimer.start;
+    window.clearTimeout(element.callbackTimer.clock);
+  }
 
-	beforeCallback(element.node);
+  beforeCallback(element.node);
 
-	element.callbackTimer = {
-		start: Date.now(),
-		clock: window.setTimeout(function () {
-			afterCallback(element.node);
-			element.callbackTimer = null;
-			if (element.revealed && !element.config.reset && element.config.cleanup) {
-				clean.call(this$1, element.node);
-			}
-		}, duration - elapsed)
-	};
+  element.callbackTimer = {
+    start: Date.now(),
+    clock: window.setTimeout(function () {
+      afterCallback(element.node);
+      element.callbackTimer = null;
+      if (element.revealed && !element.config.reset && element.config.cleanup) {
+        clean.call(this$1, element.node);
+      }
+    }, duration - elapsed),
+  };
 }
 
 var nextUniqueId = (function () {
@@ -695,45 +701,45 @@ function cue(seq, i, direction, pristine) {
 }
 
 function initialize() {
-	var this$1 = this;
+  var this$1 = this;
 
-	rinse.call(this);
+  rinse.call(this);
 
-	each(this.store.elements, function (element) {
-		var styles = [element.styles.inline.generated];
+  each(this.store.elements, function (element) {
+    var styles = [element.styles.inline.generated];
 
-		if (element.visible) {
-			styles.push(element.styles.opacity.computed);
-			styles.push(element.styles.transform.generated.final);
-			element.revealed = true;
-		} else {
-			styles.push(element.styles.opacity.generated);
-			styles.push(element.styles.transform.generated.initial);
-			element.revealed = false;
-		}
+    if (element.visible) {
+      styles.push(element.styles.opacity.computed);
+      styles.push(element.styles.transform.generated.final);
+      element.revealed = true;
+    } else {
+      styles.push(element.styles.opacity.generated);
+      styles.push(element.styles.transform.generated.initial);
+      element.revealed = false;
+    }
 
-		element.node.setAttribute('style', styles.filter(function (s) { return s !== ''; }).join(' '));
-	});
+    applyStyles$1(element.node, styles.filter(function (s) { return s !== ""; }).join(" "));
+  });
 
-	each(this.store.containers, function (container) {
-		var target =
-			container.node === document.documentElement ? window : container.node;
-		target.addEventListener('scroll', this$1.delegate);
-		target.addEventListener('resize', this$1.delegate);
-	});
+  each(this.store.containers, function (container) {
+    var target =
+      container.node === document.documentElement ? window : container.node;
+    target.addEventListener("scroll", this$1.delegate);
+    target.addEventListener("resize", this$1.delegate);
+  });
 
-	/**
-	 * Manually invoke delegate once to capture
-	 * element and container dimensions, container
-	 * scroll position, and trigger any valid reveals
-	 */
-	this.delegate();
+  /**
+   * Manually invoke delegate once to capture
+   * element and container dimensions, container
+   * scroll position, and trigger any valid reveals
+   */
+  this.delegate();
 
-	/**
-	 * Wipe any existing `setTimeout` now
-	 * that initialization has completed.
-	 */
-	this.initTimeout = null;
+  /**
+   * Wipe any existing `setTimeout` now
+   * that initialization has completed.
+   */
+  this.initTimeout = null;
 }
 
 function isMobile(agent) {
@@ -766,149 +772,149 @@ function deepAssign(target) {
 }
 
 function reveal(target, options, syncing) {
-	var this$1 = this;
-	if ( options === void 0 ) options = {};
-	if ( syncing === void 0 ) syncing = false;
+  var this$1 = this;
+  if ( options === void 0 ) options = {};
+  if ( syncing === void 0 ) syncing = false;
 
-	var containerBuffer = [];
-	var sequence$$1;
-	var interval = options.interval || defaults.interval;
+  var containerBuffer = [];
+  var sequence$$1;
+  var interval = options.interval || defaults.interval;
 
-	try {
-		if (interval) {
-			sequence$$1 = new Sequence(interval);
-		}
+  try {
+    if (interval) {
+      sequence$$1 = new Sequence(interval);
+    }
 
-		var nodes = $(target);
-		if (!nodes.length) {
-			throw new Error('Invalid reveal target.')
-		}
+    var nodes = $(target);
+    if (!nodes.length) {
+      throw new Error("Invalid reveal target.");
+    }
 
-		var elements = nodes.reduce(function (elementBuffer, elementNode) {
-			var element = {};
-			var existingId = elementNode.getAttribute('data-sr-id');
+    var elements = nodes.reduce(function (elementBuffer, elementNode) {
+      var element = {};
+      var existingId = elementNode.getAttribute("data-sr-id");
 
-			if (existingId) {
-				deepAssign(element, this$1.store.elements[existingId]);
+      if (existingId) {
+        deepAssign(element, this$1.store.elements[existingId]);
 
-				/**
-				 * In order to prevent previously generated styles
-				 * from throwing off the new styles, the style tag
-				 * has to be reverted to its pre-reveal state.
-				 */
-				element.node.setAttribute('style', element.styles.inline.computed);
-			} else {
-				element.id = nextUniqueId();
-				element.node = elementNode;
-				element.seen = false;
-				element.revealed = false;
-				element.visible = false;
-			}
+        /**
+         * In order to prevent previously generated styles
+         * from throwing off the new styles, the style tag
+         * has to be reverted to its pre-reveal state.
+         */
+        applyStyles(element.node, element.styles.inline.computed);
+      } else {
+        element.id = nextUniqueId();
+        element.node = elementNode;
+        element.seen = false;
+        element.revealed = false;
+        element.visible = false;
+      }
 
-			var config = deepAssign({}, element.config || this$1.defaults, options);
+      var config = deepAssign({}, element.config || this$1.defaults, options);
 
-			if ((!config.mobile && isMobile()) || (!config.desktop && !isMobile())) {
-				if (existingId) {
-					clean.call(this$1, element);
-				}
-				return elementBuffer // skip elements that are disabled
-			}
+      if ((!config.mobile && isMobile()) || (!config.desktop && !isMobile())) {
+        if (existingId) {
+          clean.call(this$1, element);
+        }
+        return elementBuffer; // skip elements that are disabled
+      }
 
-			var containerNode = $(config.container)[0];
-			if (!containerNode) {
-				throw new Error('Invalid container.')
-			}
-			if (!containerNode.contains(elementNode)) {
-				return elementBuffer // skip elements found outside the container
-			}
+      var containerNode = $(config.container)[0];
+      if (!containerNode) {
+        throw new Error("Invalid container.");
+      }
+      if (!containerNode.contains(elementNode)) {
+        return elementBuffer; // skip elements found outside the container
+      }
 
-			var containerId;
-			{
-				containerId = getContainerId(
-					containerNode,
-					containerBuffer,
-					this$1.store.containers
-				);
-				if (containerId === null) {
-					containerId = nextUniqueId();
-					containerBuffer.push({ id: containerId, node: containerNode });
-				}
-			}
+      var containerId;
+      {
+        containerId = getContainerId(
+          containerNode,
+          containerBuffer,
+          this$1.store.containers
+        );
+        if (containerId === null) {
+          containerId = nextUniqueId();
+          containerBuffer.push({ id: containerId, node: containerNode });
+        }
+      }
 
-			element.config = config;
-			element.containerId = containerId;
-			element.styles = style(element);
+      element.config = config;
+      element.containerId = containerId;
+      element.styles = style$1(element);
 
-			if (sequence$$1) {
-				element.sequence = {
-					id: sequence$$1.id,
-					index: sequence$$1.members.length
-				};
-				sequence$$1.members.push(element.id);
-			}
+      if (sequence$$1) {
+        element.sequence = {
+          id: sequence$$1.id,
+          index: sequence$$1.members.length,
+        };
+        sequence$$1.members.push(element.id);
+      }
 
-			elementBuffer.push(element);
-			return elementBuffer
-		}, []);
+      elementBuffer.push(element);
+      return elementBuffer;
+    }, []);
 
-		/**
-		 * Modifying the DOM via setAttribute needs to be handled
-		 * separately from reading computed styles in the map above
-		 * for the browser to batch DOM changes (limiting reflows)
-		 */
-		each(elements, function (element) {
-			this$1.store.elements[element.id] = element;
-			element.node.setAttribute('data-sr-id', element.id);
-		});
-	} catch (e) {
-		return logger.call(this, 'Reveal failed.', e.message)
-	}
+    /**
+     * Modifying the DOM via setAttribute needs to be handled
+     * separately from reading computed styles in the map above
+     * for the browser to batch DOM changes (limiting reflows)
+     */
+    each(elements, function (element) {
+      this$1.store.elements[element.id] = element;
+      element.node.setAttribute("data-sr-id", element.id);
+    });
+  } catch (e) {
+    return logger.call(this, "Reveal failed.", e.message);
+  }
 
-	/**
-	 * Now that element set-up is complete...
-	 * Let’s commit any container and sequence data we have to the store.
-	 */
-	each(containerBuffer, function (container) {
-		this$1.store.containers[container.id] = {
-			id: container.id,
-			node: container.node
-		};
-	});
-	if (sequence$$1) {
-		this.store.sequences[sequence$$1.id] = sequence$$1;
-	}
+  /**
+   * Now that element set-up is complete...
+   * Let’s commit any container and sequence data we have to the store.
+   */
+  each(containerBuffer, function (container) {
+    this$1.store.containers[container.id] = {
+      id: container.id,
+      node: container.node,
+    };
+  });
+  if (sequence$$1) {
+    this.store.sequences[sequence$$1.id] = sequence$$1;
+  }
 
-	/**
-	 * If reveal wasn't invoked by sync, we want to
-	 * make sure to add this call to the history.
-	 */
-	if (syncing !== true) {
-		this.store.history.push({ target: target, options: options });
+  /**
+   * If reveal wasn't invoked by sync, we want to
+   * make sure to add this call to the history.
+   */
+  if (syncing !== true) {
+    this.store.history.push({ target: target, options: options });
 
-		/**
-		 * Push initialization to the event queue, giving
-		 * multiple reveal calls time to be interpreted.
-		 */
-		if (this.initTimeout) {
-			window.clearTimeout(this.initTimeout);
-		}
-		this.initTimeout = window.setTimeout(initialize.bind(this), 0);
-	}
+    /**
+     * Push initialization to the event queue, giving
+     * multiple reveal calls time to be interpreted.
+     */
+    if (this.initTimeout) {
+      window.clearTimeout(this.initTimeout);
+    }
+    this.initTimeout = window.setTimeout(initialize.bind(this), 0);
+  }
 }
 
 function getContainerId(node) {
-	var collections = [], len = arguments.length - 1;
-	while ( len-- > 0 ) collections[ len ] = arguments[ len + 1 ];
+  var collections = [], len = arguments.length - 1;
+  while ( len-- > 0 ) collections[ len ] = arguments[ len + 1 ];
 
-	var id = null;
-	each(collections, function (collection) {
-		each(collection, function (container) {
-			if (id === null && container.node === node) {
-				id = container.id;
-			}
-		});
-	});
-	return id
+  var id = null;
+  each(collections, function (collection) {
+    each(collection, function (container) {
+      if (id === null && container.node === node) {
+        id = container.id;
+      }
+    });
+  });
+  return id;
 }
 
 /**
@@ -926,7 +932,7 @@ function sync() {
 }
 
 var polyfill = function (x) { return (x > 0) - (x < 0) || +x; };
-var mathSign = Math.sign || polyfill;
+var mathSign = Math.sign || polyfill
 
 function getGeometry(target, isContainer) {
 	/**

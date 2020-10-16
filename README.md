@@ -37,6 +37,11 @@
 
 <br>
 
+# Re:infer section
+
+To install the dependencies, you'll need to `yarn install --ignore-engines` as some transitive dependency expects Node <=9.
+For reasons I don't have time to investigate, rollup minification is broken, but it's not necessary - do **not** use `yarn build`, just use `yarn bundle`, which will generate only the unminified distro. The webpack pipeline in the marketing site will take care of minification.
+
 # Introduction
 
 ScrollReveal is a JavaScript library for easily animating elements as they enter/leave the viewport. It was designed to be robust and flexible, but hopefully you’ll be surprised below at how easy it is to pick up.
